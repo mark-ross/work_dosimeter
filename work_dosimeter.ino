@@ -113,7 +113,10 @@ class Interact : public Engine {
         else if( c_button >= 3000 && c_button < 4000){//3 seconds
           //show lights
           //pulse motor
-        }   
+        }
+        else if( c_button > 4000 ){
+          c_button -= 4000; //reset back to 0-ish
+        }
       }
 
       //after it's no longer being pressed
@@ -128,7 +131,7 @@ class Interact : public Engine {
           time_worked = 0; // reset the counter
         }
 
-      time_worked += c_dur;
+      time_worked += (c_dur/1000); //add actual seconds, not milliseconds
     }
     void react(){
       if(show == 1){
