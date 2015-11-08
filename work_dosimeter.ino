@@ -1,3 +1,5 @@
+#include <elapsedMillis.h>
+
 /******************************
  * Type definitions.
  ******************************/
