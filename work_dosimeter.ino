@@ -76,11 +76,14 @@ class Sleep : public Engine {
 class Interact : public Engine {
   public:
     //set a boolean named show
-    bool show = false;
+    bool show;
+
+    Interact(){ show = false; }
+    ~Interact
     
     void event_handling(){
       //start timer
-      int sub_counter = 0;
+      elapsedMillis sub_counter = 0;
       
       while(digitalRead(fsr) == HIGH){
         //update timer
