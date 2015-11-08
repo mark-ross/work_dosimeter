@@ -76,20 +76,28 @@ class Sleep : public Engine {
 class Interact : public Engine {
   public:
     //set a boolean named show
-    bool show;
+    int show;
 
-    Interact(){ show = false; }
-    ~Interact
+    Interact(){ 
+      show = 0; //neutral
+      //1 = start timer
+      //2 = Show results
+      //3 = reset master timer
+      elapsedMillis c_button = 0;
+      elapsedMillis c_dur = 0;
+    }
+    
+    ~Interact() {}
     
     void event_handling(){
       //start timer
-      elapsedMillis sub_counter = 0;
+      c_dur = 0;
       
       while(digitalRead(fsr) == HIGH){
-        //update timer
-        //A:LKDJF:LAKJDF
+        //start the button press timer
+        c_button = 0;
         
-        if(sub_counter >= 1000 && sub_counter < 2000){//1 Second
+        if(c_button >= 1000 && c_button < 2000){//1 Second
           if(c == on){
             //show lights
             //pulse motor
@@ -98,34 +106,47 @@ class Interact : public Engine {
             //pulse motor
           }
         } 
-        else if(sub_counter >= 2000 && sub_counter < 3000){//2 seconds
+        else if( c_button >= 2000 && c_button < 3000){//2 seconds
           //show lights
           //pulse motor
         }
-        else if(sub_counter >= 3000 && sub_counter < 4000){//3 seconds
+        else if( c_button >= 3000 && c_button < 4000){//3 seconds
           //show lights
           //pulse motor
         }   
       }
 
       //after it's no longer being pressed
-        if(sub_counter >= 1000 && sub_counter < 2000){ //1 Second
+        if( c_button >= 1000 && c_button < 2000){ //1 Second
           if(c == on){ c = off; }  //turn off the counting
           else { c = on; }         //turn on the counting
         } 
-        else if(sub_counter >= 2000 && sub_counter < 3000){
+        else if( c_button >= 2000 && c_button < 3000){
           show = true; //sets the show variable to true;
         }
-        else if(sub_counter >= 3000 && sub_counter < 4000){
+        else if( c_button >= 3000 && c_button < 4000){
           time_worked = 0; // reset the counter
         }
+
+      time_worked += c_dur;
     }
     void react(){
-      if(show){ //if we are showing
-        if(time_worked < 40){
+      if(show == 1){
+        if(c == on){
+          c = off;
+        } else {
+          c = on;
+        }
+      }
+      else if(show == 2){ //if we are showing
+
+        // convert millisecs to hours
+        int th = ((time_worked/1000)/3600);
+        
+        if(th < 40){
           //show green
         }
-        else if(time_worked > 45){
+        else if(th > 45){
           //show red
           //buzz  
         }
@@ -133,6 +154,9 @@ class Interact : public Engine {
           //show blue
           //pulse
         }
+      }
+      else if(show == 3){
+        time_worked = 0; //reset the master timer
       }
     }
 };
