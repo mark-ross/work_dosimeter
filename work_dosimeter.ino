@@ -14,8 +14,10 @@
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(LEDs, PIN, NEO_GRB + NEO_KHZ800);
 
 uint32_t red = 0xFF0000;
-uint32_t off = 0x000000;
+uint32_t off_light = 0x000000;
 uint32_t green = 0x00FF00;
+uint32_t blue = 0x0000FF;
+uint32_t yellow = 0xFFFF00;
 
 /******************************
  * Type definitions.
@@ -113,13 +115,16 @@ class Interact : public Engine {
     //set a boolean named show
     int show;
 
+    elapsedMillis c_button;
+    elapsedMillis c_dur;
+
     Interact(){ 
       show = 0; //neutral
       //1 = start timer
       //2 = Show results
       //3 = reset master timer
-      elapsedMillis c_button = 0;
-      elapsedMillis c_dur = 0;
+      c_button = 0;
+      c_dur = 0;
     }
     
     ~Interact() {}
@@ -133,6 +138,7 @@ class Interact : public Engine {
         c_button = 0;
         
         if(c_button >= 1000 && c_button < 2000){//1 Second
+          all_pixels(green);
           if(c == on){
             //show lights
             //pulse motor
@@ -143,10 +149,12 @@ class Interact : public Engine {
         } 
         else if( c_button >= 2000 && c_button < 3000){//2 seconds
           //show lights
+          all_pixels(blue);
           //pulse motor
         }
         else if( c_button >= 3000 && c_button < 4000){//3 seconds
           //show lights
+          all_pixels(red);
           //pulse motor
         }
         else if( c_button > 4000 ){
@@ -213,7 +221,7 @@ class Interact : public Engine {
  * 
  * For now, we set it to Start()
  */
-Engine *engine = new Sleep();
+Engine *engine = new Interact();
 
 
 //Function to determine states
@@ -226,12 +234,12 @@ void change(){
       
       case sleep:  // if it's start...
         engine = new Sleep();  // set engine to a new Start
-        Serial.write("Sleep State\n");
+        //Serial.write("Sleep State\n");
         break;     // exit the loop
         
       case interact:  // if it's interrupted
         engine = new Interact();  // set engine to a new Interrupted
-        Serial.write("interact State\n");
+        //Serial.write("interact State\n");
         break;     // exit the loop
     }
     current = next;
@@ -245,7 +253,7 @@ void setup(){
   strip.setBrightness(75);
   strip.show(); // Initialize all pixels to 'off'
 
-  Serial.begin(9600);
+  //Serial.begin(9600);
 }
 
 void loop() {

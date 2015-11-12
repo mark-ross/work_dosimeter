@@ -1,4 +1,4 @@
-int vib = 10;
+int vib = 0;
 
 void setup() {
   // put your setup code here, to run once:
