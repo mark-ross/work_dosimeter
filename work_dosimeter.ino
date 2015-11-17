@@ -36,7 +36,7 @@ typedef enum {
 /**********************************
  * Declaration of global variables!
  **********************************/
-states current = sleep; //beginning state
+states current = interact; //beginning state
 states next = current;  //state to go to
 counting c = off;       //if we're tracking time
 
@@ -54,9 +54,8 @@ void pixel_on(int pixel, uint32_t color){
 
 void all_pixels(uint32_t color){
   for(int i = (LEDs-1); i>=0; i--)
-  {
-    pixel_on(i,color); 
-  }
+    { pixel_on(i,color); }
+    strip.show();
 }
 
 void motor_on(){
@@ -114,7 +113,6 @@ class Interact : public Engine {
   public:
     //set a boolean named show
     int show;
-
     elapsedMillis c_button;
     elapsedMillis c_dur;
 
@@ -123,8 +121,6 @@ class Interact : public Engine {
       //1 = start timer
       //2 = Show results
       //3 = reset master timer
-      c_button = 0;
-      c_dur = 0;
     }
     
     ~Interact() {}
@@ -132,13 +128,23 @@ class Interact : public Engine {
     void event_handling(){
       //start timer
       c_dur = 0;
+      //start the button press timer
+      c_button = 0;
+
+      if(digitalRead(fsr) == LOW){
+        all_pixels(off_light);
+      }
       
       while(digitalRead(fsr) == HIGH){
-        //start the button press timer
-        c_button = 0;
-        
-        if(c_button >= 1000 && c_button < 2000){//1 Second
+
+        while(c_button >= 1000 && c_button < 2000){//1 Second
           all_pixels(green);
+
+          digitalWrite(vib,HIGH);
+          digitalWrite(vib,LOW);
+          digitalWrite(vib,HIGH);
+          digitalWrite(vib,LOW);
+          
           if(c == on){
             //show lights
             //pulse motor
@@ -147,18 +153,19 @@ class Interact : public Engine {
             //pulse motor
           }
         } 
-        else if( c_button >= 2000 && c_button < 3000){//2 seconds
+        while( c_button >= 2000 && c_button < 3000){//2 seconds
           //show lights
           all_pixels(blue);
           //pulse motor
         }
-        else if( c_button >= 3000 && c_button < 4000){//3 seconds
+        while( c_button >= 3000 && c_button < 4000){//3 seconds
           //show lights
           all_pixels(red);
           //pulse motor
         }
-        else if( c_button > 4000 ){
+        if( c_button > 4000 ){
           c_button -= 4000; //reset back to 0-ish
+          all_pixels(yellow);
         }
       }
 
@@ -208,19 +215,6 @@ class Interact : public Engine {
 };
 
 
-/*
- * This is where things get tricky.
- * Because of C++ inheritance, we can
- * do some awesome things.
- * 
- * We start by creating an instance of
- * the parent class, Engine.  This variable
- * is also a pointer.  Basically, we're creating
- * a changeable variable that will point at
- * whichever new state we send it to.
- * 
- * For now, we set it to Start()
- */
 Engine *engine = new Interact();
 
 
@@ -253,6 +247,10 @@ void setup(){
   strip.setBrightness(75);
   strip.show(); // Initialize all pixels to 'off'
 
+  all_pixels(green);
+  delay(1000);
+  all_pixels(off_light);
+  strip.show();
   //Serial.begin(9600);
 }
 
@@ -260,5 +258,4 @@ void loop() {
   engine->event_handling();  // process events
   engine->react();   // React to the events
   change();  // handle any change in states
- 
 }
