@@ -58,12 +58,81 @@ void all_pixels(uint32_t color){
     strip.show();
 }
 
-void motor_on(){
-  digitalWrite(vib, HIGH);
-}
-void motor_off(){
-  digitalWrite(vib,LOW);
-}
+
+class Motor{
+  private:
+    int timer;
+    bool on_off;
+  
+  public:
+
+    Motor(){
+      //set all the initial variables
+      timer = 0;
+      on_off = false;
+    }
+    
+    ~Motor(){
+      //nothing to delete. . .  
+    }
+
+    bool is_on(){
+      //function to access variables!
+      return on_off;
+    }
+
+    void flip_on_off(){
+      if(this->on_off == false){
+        this->on_off = true;
+      }
+      else {
+        this->on_off = false;
+      }
+    }
+
+    int current_time(){
+      return timer;
+    }
+
+    void set_timer(int t){
+      this->timer = t;
+    }
+
+    void flip_motor(){
+      if(this->is_on()){  //if the motor is on. . .
+        this->motor_off();  //turn it off
+        this->flip_on_off();
+      }
+      else{  //if the motor is off
+        this->motor_on();  //turn it on
+        this->flip_on_off();
+      }
+    }
+
+    void check_motor(int new_time, int thresh){
+      if(new_time > this->current_time()){
+        // if there has been a 500 millisec difference
+        if((new_time - this->current_time()) >= thresh){
+          this->flip_motor();
+          this->set_timer(new_time);
+        }
+      }
+      else {
+        this->set_timer(new_time);
+        this->motor_off();
+      }
+    }
+  
+    void motor_on(){ //turn the motor on
+      digitalWrite(vib, HIGH);
+    }
+    void motor_off(){ //turn the motor off
+      digitalWrite(vib,LOW);
+    }
+}haptic;
+
+
+
 
 //This is our parent class.
 class Engine{
@@ -137,35 +206,28 @@ class Interact : public Engine {
       
       while(digitalRead(fsr) == HIGH){
 
-        while(c_button >= 1000 && c_button < 2000){//1 Second
-          all_pixels(green);
-
-          digitalWrite(vib,HIGH);
-          digitalWrite(vib,LOW);
-          digitalWrite(vib,HIGH);
-          digitalWrite(vib,LOW);
-          
-          if(c == on){
-            //show lights
-            //pulse motor
-          } else if(c == off){
-            //show lights
-            //pulse motor
-          }
-        } 
-        while( c_button >= 2000 && c_button < 3000){//2 seconds
+        if(c_button < 1000){
           //show lights
           all_pixels(blue);
           //pulse motor
+          haptic.check_motor(c_button,333);
         }
-        while( c_button >= 3000 && c_button < 4000){//3 seconds
+        if(c_button >= 1000 && c_button < 4000){
+          //show lights
+          all_pixels(green);
+          //pusle motor
+          haptic.check_motor(c_button,250);
+        } 
+
+        if( c_button >= 4000 && c_button < 5000){
           //show lights
           all_pixels(red);
           //pulse motor
+          haptic.check_motor(c_button,100);
         }
-        if( c_button > 4000 ){
-          c_button -= 4000; //reset back to 0-ish
-          all_pixels(yellow);
+        if( c_button > 5000 ){
+          c_button -= 5000; //reset back to 0-ish
+          //all_pixels(yellow);
         }
       }
 
