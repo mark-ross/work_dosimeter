@@ -40,7 +40,7 @@ states current = interact; //beginning state
 states next = current;  //state to go to
 counting c = off;       //if we're tracking time
 
-int time_worked = 0;    //create a timer for time worked
+int time_worked = 86400000;    //create a timer for time worked
 
 //define all the pins here
 int fsr = 1; //force sensor
@@ -163,8 +163,8 @@ class Interact : public Engine {
 
     Interact(){ 
       show = 0; //neutral
-      //1 = start timer
-      //2 = Show results
+      //2 = start timer
+      //3 = Show results
       //3 = reset master timer
     }
     
@@ -189,6 +189,7 @@ class Interact : public Engine {
           //pulse motor
           haptic->check(c_button,100);
           haptic->react();
+          show = 1;
         }
         if(c_button >= 1000 && c_button < 4000){
           //show lights
@@ -196,6 +197,7 @@ class Interact : public Engine {
           //pusle motor
           haptic->check(c_button,200);
           haptic->react();
+          show = 2;
         } 
         if( c_button >= 4000 && c_button < 5000){
           //show lights
@@ -203,40 +205,30 @@ class Interact : public Engine {
           //pulse motor
           haptic->check(c_button,333);
           haptic->react();
+          show = 3;
         }
         if( c_button > 5000 ){
           c_button -= 5000; //reset back to 0-ish
-          //all_pixels(yellow);
+          show = 1;
         }
       }
       haptic->motor_off();
-
-      //after it's no longer being pressed
-        if( c_button >= 1000 && c_button < 2000){ //1 Second
-          if(c == on){ c = off; }  //turn off the counting
-          else { c = on; }         //turn on the counting
-        } 
-        else if( c_button >= 2000 && c_button < 3000){
-          show = true; //sets the show variable to true;
-        }
-        else if( c_button >= 3000 && c_button < 4000){
-          time_worked = 0; // reset the counter
-        }
-
       time_worked += (c_dur/1000); //add actual seconds, not milliseconds
     }
+    
     void react(){
-      if(show == 1){
-        if(c == on){
-          c = off;
-        } else {
-          c = on;
-        }
-      }
-      else if(show == 2){ //if we are showing
-
+      if(show == 1){ //if we are showing
+        all_pixels(off_light);
         // convert millisecs to hours
         int th = ((time_worked/1000)/3600);
+        int for_one = 40/12;
+        int num_pix = th/for_one;
+        
+        for(int i = 0; i < num_pix; i++)
+        { 
+          pixel_on(i,green);
+        }
+        strip.show();
         
         if(th < 40){
           //show green
@@ -250,6 +242,13 @@ class Interact : public Engine {
           //pulse
         }
       }
+      else if(show == 2){
+        if(c == on){
+          c = off;
+        } else {
+          c = on;
+        }
+      }
       else if(show == 3){
         time_worked = 0; //reset the master timer
       }
@@ -259,11 +258,9 @@ class Interact : public Engine {
 
 Engine *engine = new Interact();
 
-
 //Function to determine states
 void change(){
   if(next != current){  // if we need to go somewhere
-    
     delete engine;  // delete the current state
     
     switch(next) {  // based on what next is...
@@ -298,7 +295,6 @@ void setup(){
   delay(1000);
   all_pixels(off_light);
   strip.show();
-  //Serial.begin(9600);
 }
 
 void loop() {
