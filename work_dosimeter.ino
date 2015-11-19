@@ -60,76 +60,51 @@ void all_pixels(uint32_t color){
 
 
 class Motor{
-  private:
+ 
+  public:
     int timer;
     bool on_off;
-  
-  public:
+    int vib;
 
-    Motor(){
+    Motor(int p){
       //set all the initial variables
       timer = 0;
-      on_off = false;
+      on_off = true;
+      this->vib = p;
     }
     
-    ~Motor(){
-      //nothing to delete. . .  
-    }
-
-    bool is_on(){
-      //function to access variables!
-      return on_off;
-    }
+    ~Motor(){}
+    
+    void set_timer(int t)
+      { this->timer = t; }
 
     void flip_on_off(){
-      if(this->on_off == false){
-        this->on_off = true;
-      }
-      else {
-        this->on_off = false;
-      }
+      if(on_off) { on_off = false; } 
+      else { on_off = true; }
     }
 
-    int current_time(){
-      return timer;
-    }
-
-    void set_timer(int t){
-      this->timer = t;
-    }
-
-    void flip_motor(){
-      if(this->is_on()){  //if the motor is on. . .
-        this->motor_off();  //turn it off
-        this->flip_on_off();
-      }
-      else{  //if the motor is off
-        this->motor_on();  //turn it on
-        this->flip_on_off();
-      }
-    }
-
-    void check_motor(int new_time, int thresh){
-      if(new_time > this->current_time()){
-        // if there has been a 500 millisec difference
-        if((new_time - this->current_time()) >= thresh){
-          this->flip_motor();
+    void check(int new_time,int thresh){
+      if(new_time > this->timer){
+        // if there has been a threshold of difference
+        if((new_time - this->timer) >= thresh){
+          this->flip_on_off();
           this->set_timer(new_time);
         }
       }
       else {
-        this->set_timer(new_time);
-        this->motor_off();
+        this->on_off = false;
+        this->set_timer(0);
       }
     }
-  
-    void motor_on(){ //turn the motor on
-      digitalWrite(vib, HIGH);
+
+    void motor_on()  { digitalWrite(this->vib, HIGH); }
+    void motor_off() { digitalWrite(this->vib,LOW); }
+
+    void react(){
+      if(this->on_off) { motor_on(); } 
+      else { motor_off(); }
     }
-    void motor_off(){ //turn the motor off
-      digitalWrite(vib,LOW);
-    }
-}haptic;
+};
 
 
 
@@ -184,6 +159,7 @@ class Interact : public Engine {
     int show;
     elapsedMillis c_button;
     elapsedMillis c_dur;
+    Motor* haptic = new Motor(vib);
 
     Interact(){ 
       show = 0; //neutral
@@ -205,31 +181,35 @@ class Interact : public Engine {
       }
       
       while(digitalRead(fsr) == HIGH){
+        //haptic->motor_on();
 
         if(c_button < 1000){
           //show lights
           all_pixels(blue);
           //pulse motor
-          haptic.check_motor(c_button,333);
+          haptic->check(c_button,100);
+          haptic->react();
         }
         if(c_button >= 1000 && c_button < 4000){
           //show lights
           all_pixels(green);
           //pusle motor
-          haptic.check_motor(c_button,250);
+          haptic->check(c_button,200);
+          haptic->react();
         } 
-
         if( c_button >= 4000 && c_button < 5000){
           //show lights
           all_pixels(red);
           //pulse motor
-          haptic.check_motor(c_button,100);
+          haptic->check(c_button,333);
+          haptic->react();
         }
         if( c_button > 5000 ){
           c_button -= 5000; //reset back to 0-ish
           //all_pixels(yellow);
         }
       }
+      haptic->motor_off();
 
       //after it's no longer being pressed
         if( c_button >= 1000 && c_button < 2000){ //1 Second
@@ -304,6 +284,11 @@ void change(){
 
 
 void setup(){
+
+  pinMode(vib,OUTPUT);
+  pinMode(fsr,INPUT);
+  pinMode(neo,OUTPUT);
+  
   //perform any setup here.
   strip.begin();
   strip.setBrightness(75);
