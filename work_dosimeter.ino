@@ -40,7 +40,7 @@ states current = interact; //beginning state
 states next = current;  //state to go to
 counting c = off;       //if we're tracking time
 
-int time_worked = 144000000;    //create a timer for time worked
+uint32_t time_worked = 140000000;    //create a timer for time worked
 
 //define all the pins here
 int fsr = 1; //force sensor
@@ -187,7 +187,7 @@ class Interact : public Engine {
           haptic->check(c_button,100);
           haptic->react();
         }
-        if(c_button >= 1000 && c_button < 4000){
+        if(c_button >= 1000 && c_button < 3000){
           show = 2;
           //show lights
           all_pixels(green);
@@ -195,7 +195,7 @@ class Interact : public Engine {
           haptic->check(c_button,200);
           haptic->react();
         } 
-        if( c_button >= 4000 && c_button < 5000){
+        if( c_button >= 3000 && c_button < 5000){
           show = 3;
           //show lights
           all_pixels(red);
@@ -209,7 +209,7 @@ class Interact : public Engine {
         }
       }
       haptic->motor_off();
-      time_worked += (c_dur/1000); //add actual seconds, not milliseconds
+      time_worked += c_dur; //add milliseconds
     }
     
     void react(){
@@ -220,13 +220,12 @@ class Interact : public Engine {
         }
       }
       if(show == 1){ //if we are showing
-        int th = ((time_worked/1000)/3600);
-        int for_one = 40/12;
-        int num_pix = th/for_one;
+        //int th = (((time_worked/1000)/60)/60);
+        int th = time_worked;
         
         if(th < 35){
           all_pixels(green);
-        } else if (th >=35 && th < 40){
+        } else if (th >= 35 && th < 40){
           all_pixels(yellow);
         } else {
           all_pixels(red);
