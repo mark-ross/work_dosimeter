@@ -40,7 +40,7 @@ states current = interact; //beginning state
 states next = current;  //state to go to
 counting c = off;       //if we're tracking time
 
-int time_worked = 86400000;    //create a timer for time worked
+int time_worked = 144000000;    //create a timer for time worked
 
 //define all the pins here
 int fsr = 1; //force sensor
@@ -159,6 +159,7 @@ class Interact : public Engine {
     int show;
     elapsedMillis c_button;
     elapsedMillis c_dur;
+    elapsedMillis down_time;
     Motor* haptic = new Motor(vib);
 
     Interact(){ 
@@ -175,41 +176,36 @@ class Interact : public Engine {
       c_dur = 0;
       //start the button press timer
       c_button = 0;
-
-      if(digitalRead(fsr) == LOW){
-        all_pixels(off_light);
-      }
       
       while(digitalRead(fsr) == HIGH){
-        //haptic->motor_on();
-
+        down_time = 0;
         if(c_button < 1000){
+          show = 1;
           //show lights
           all_pixels(blue);
           //pulse motor
           haptic->check(c_button,100);
           haptic->react();
-          show = 1;
         }
         if(c_button >= 1000 && c_button < 4000){
+          show = 2;
           //show lights
           all_pixels(green);
           //pusle motor
           haptic->check(c_button,200);
           haptic->react();
-          show = 2;
         } 
         if( c_button >= 4000 && c_button < 5000){
+          show = 3;
           //show lights
           all_pixels(red);
           //pulse motor
           haptic->check(c_button,333);
           haptic->react();
-          show = 3;
+          
         }
         if( c_button > 5000 ){
           c_button -= 5000; //reset back to 0-ish
-          show = 1;
         }
       }
       haptic->motor_off();
@@ -217,32 +213,31 @@ class Interact : public Engine {
     }
     
     void react(){
+      if(show == 0){
+        if(down_time >= 4000){
+          time_worked += down_time;
+          //change state to sleep
+        }
+      }
       if(show == 1){ //if we are showing
-        all_pixels(off_light);
-        // convert millisecs to hours
         int th = ((time_worked/1000)/3600);
         int for_one = 40/12;
         int num_pix = th/for_one;
         
-        for(int i = 0; i < num_pix; i++)
-        { 
-          pixel_on(i,green);
+        if(th < 35){
+          all_pixels(green);
+        } else if (th >=35 && th < 40){
+          all_pixels(yellow);
+        } else {
+          all_pixels(red);
         }
-        strip.show();
-        
-        if(th < 40){
-          //show green
-        }
-        else if(th > 45){
-          //show red
-          //buzz  
-        }
-        else {
-          //show blue
-          //pulse
-        }
+        delay(3000);
+        all_pixels(off_light);
+        time_worked += 3000;
+        show = 0;
       }
       else if(show == 2){
+        all_pixels(off_light);
         if(c == on){
           c = off;
         } else {
@@ -250,6 +245,7 @@ class Interact : public Engine {
         }
       }
       else if(show == 3){
+        all_pixels(off_light);
         time_worked = 0; //reset the master timer
       }
     }
