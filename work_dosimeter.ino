@@ -1,8 +1,10 @@
 #include <elapsedMillis.h>
 #include "Adafruit_NeoPixel.h"
+#include <LowPower.h>
+
 
 #define LEDs 12
-#define PIN 2
+#define PIN 5
 
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = pin number (most are valid)
@@ -23,8 +25,9 @@ uint32_t yellow = 0xFFFF00;
  * Type definitions.
  ******************************/
 typedef enum {
-  sleep,
+  sleeper,
   interact,
+  empty,
 } states;
 
 typedef enum {
@@ -36,16 +39,16 @@ typedef enum {
 /**********************************
  * Declaration of global variables!
  **********************************/
-states current = interact; //beginning state
-states next = current;  //state to go to
+states current = empty; //beginning state
+states next = sleeper;  //state to go to
 counting c = off;       //if we're tracking time
 
 uint32_t time_worked = 140000000;    //create a timer for time worked
 
 //define all the pins here
-int fsr = 1; //force sensor
-int vib = 0; //vibration motor
-int neo = 2; //neo pixel thing
+int fsr = 2; //force sensor
+int vib = 9; //vibration motor
+int neo = 5; //neo pixel thing
 
 
 void pixel_on(int pixel, uint32_t color){
@@ -56,6 +59,14 @@ void all_pixels(uint32_t color){
   for(int i = (LEDs-1); i>=0; i--)
     { pixel_on(i,color); }
     strip.show();
+}
+
+
+//make this a global function for 
+//Arduino reasons.
+void wake_up(){
+  //on interrupt, set the state to interact mode
+  next = interact;
 }
 
 
@@ -118,38 +129,25 @@ class Engine{
 
 //This class handles all the sleep functionality.
 //Woo!
-class Sleep : public Engine {
+class Sleeper : public Engine {
 
   public:
     void event_handling(){
       /*
        * Pseudo Code
        */
-       if(c == off){ //if not counting
-        //attach an interrupt so it will wake up
-        //send arduino to sleep
-    
-        //change state to interact
-        next = interact;
-       }
-       else{ //if counting
-        //attach an interrupt so it will wake up
-        //send arduino to sleep, based on counter
-        //detach interrupt so the counting is hijacked
-        time_worked += 8; //assuming the arduino is
-                          //set to sleep for 8 seconds      
-       }
+      //set up an interrupt on pin 2
+      attachInterrupt(0, wake_up, HIGH);
+      LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
     }
 
     void react(){
       //There isn't anything to show here...
+      if(c == on){
+       detachInterrupt(0);
+       time_worked += 8000; 
+      }
     }
-
-    void wake_up(){
-      //This should be the LED show that let's
-      //the user know that everything is awake.
-    }
-
 };
 
 
@@ -160,6 +158,7 @@ class Interact : public Engine {
     elapsedMillis c_button;
     elapsedMillis c_dur;
     elapsedMillis down_time;
+    elapsedMillis inactivity;
     Motor* haptic = new Motor(vib);
 
     Interact(){ 
@@ -176,6 +175,16 @@ class Interact : public Engine {
       c_dur = 0;
       //start the button press timer
       c_button = 0;
+
+    //check for inactivity first!
+    inactivity = 0;
+    while(digitalRead(fsr) == LOW){
+      if(inactivity >= 5000){
+        next = sleeper;
+        break;
+      }
+    }
+      
       
       while(digitalRead(fsr) == HIGH){
         down_time = 0;
@@ -220,8 +229,8 @@ class Interact : public Engine {
         }
       }
       if(show == 1){ //if we are showing
-        //int th = (((time_worked/1000)/60)/60);
-        int th = time_worked;
+        int th = (((time_worked/1000)/60)/60);
+        //int th = time_worked;
         
         if(th < 35){
           all_pixels(green);
@@ -251,7 +260,7 @@ class Interact : public Engine {
 };
 
 
-Engine *engine = new Interact();
+Engine *engine = new Sleeper();
 
 //Function to determine states
 void change(){
@@ -260,8 +269,8 @@ void change(){
     
     switch(next) {  // based on what next is...
       
-      case sleep:  // if it's start...
-        engine = new Sleep();  // set engine to a new Start
+      case sleeper:  // if it's start...
+        engine = new Sleeper();  // set engine to a new Start
         //Serial.write("Sleep State\n");
         break;     // exit the loop
         
@@ -293,9 +302,9 @@ void setup(){
 }
 
 void loop() {
+  change();  // handle any change in states
   engine->event_handling();  // process events
   engine->react();   // React to the events
-  change();  // handle any change in states
 }
 
 
