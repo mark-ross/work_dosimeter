@@ -43,7 +43,8 @@ states current = empty; //beginning state
 states next = sleeper;  //state to go to
 counting c = off;       //if we're tracking time
 
-uint32_t time_worked = 140000000;    //create a timer for time worked
+//uint32_t time_worked = 140000000;    //create a timer for time worked
+uint32_t time_worked = 0;    //create a timer for time worked
 
 //define all the pins here
 int fsr = 2; //force sensor
