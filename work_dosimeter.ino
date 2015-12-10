@@ -222,8 +222,11 @@ class Interact : public Engine {
           c_button -= 5000; //reset back to 0-ish
         }
       }
+      //kill the motor pulses.
       haptic->motor_off();
-      time_worked += c_dur; //add milliseconds
+      
+      //zero out the button timer.
+      c_button = 0;
     }
     
     void react(){
@@ -231,6 +234,12 @@ class Interact : public Engine {
         if(c){time_worked += c_dur;} //add duration of the loop
       }
       if(show == 1){ //if we are showing
+        show = 0; //reset the switch
+
+        Serial.print("Time worked: ");
+        Serial.print(time_worked/1000/60/60);
+        Serial.println(" hours");
+        
         //convert the millisecs to hours
         int th = (((time_worked/1000)/60)/60);
 
@@ -250,11 +259,10 @@ class Interact : public Engine {
         
         //if the person is working. . .
         if(c){ time_worked += 3000; } //add the time to total
-        
-        show = 0; //reset the switch
+ 
       }
       else if(show == 2){
-
+        show = 0; //reset the switch
         if(c == on){ //if he/she was counting
           c = off;  //turn counting off
           all_pixels(yellow);  //turn on all the lights
@@ -278,10 +286,12 @@ class Interact : public Engine {
           delay(500); //give a final show of the lights
           all_pixels(off_light);  //turn them all off
         }
-        show = 0; //reset the switch
       }
       else if(show == 3){
+        show = 0; //reset the switch
+        
         all_pixels(off_light);
+        
         time_worked = 0; //reset the master timer
 
         all_pixels(red);  //turn on all the lights
@@ -305,8 +315,6 @@ class Interact : public Engine {
         all_pixels(red);
         delay(200);
         all_pixels(off_light);
-        
-        show = 0; //reset the switch
       }
     }
 };
@@ -323,12 +331,14 @@ void change(){
       
       case sleeper:  // if it's start...
         engine = new Sleeper();  // set engine to a new Start
-        //Serial.write("Sleep State\n");
+        Serial.write("Sleep State\n");
+        delay(100); //to let it actually write
         break;     // exit the loop
         
       case interact:  // if it's interrupted
         engine = new Interact();  // set engine to a new Interrupted
-        //Serial.write("interact State\n");
+        Serial.write("interact State\n");
+        delay(100); //to let it actually write
         break;     // exit the loop
     }
     current = next;
@@ -337,6 +347,8 @@ void change(){
 
 
 void setup(){
+
+  Serial.begin(9600);
 
   pinMode(vib,OUTPUT);
   pinMode(fsr,INPUT);
