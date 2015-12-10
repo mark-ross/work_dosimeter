@@ -53,6 +53,12 @@ int neo = 5; //neo pixel thing
 
 void pixel_on(int pixel, uint32_t color){
   strip.setPixelColor(pixel, color);
+  strip.show();
+}
+
+void pixel_off(int pixel){
+  strip.setPixelColor(pixel, off_light);
+  strip.show();
 }
 
 void all_pixels(uint32_t color){
@@ -176,18 +182,17 @@ class Interact : public Engine {
       //start the button press timer
       c_button = 0;
 
-    //check for inactivity first!
-    inactivity = 0;
-    while(digitalRead(fsr) == LOW){
-      if(inactivity >= 5000){
-        next = sleeper;
-        break;
+      //check for inactivity first!
+      inactivity = 0;
+      while(digitalRead(fsr) == LOW){
+        if(inactivity >= 5000){
+          time_worked += 5000;
+          next = sleeper;
+          break;
+        }
       }
-    }
-      
       
       while(digitalRead(fsr) == HIGH){
-        down_time = 0;
         if(c_button < 1000){
           show = 1;
           //show lights
@@ -223,15 +228,16 @@ class Interact : public Engine {
     
     void react(){
       if(show == 0){
-        if(down_time >= 4000){
-          time_worked += down_time;
-          //change state to sleep
-        }
+        if(c){time_worked += c_dur;} //add duration of the loop
       }
       if(show == 1){ //if we are showing
+        //convert the millisecs to hours
         int th = (((time_worked/1000)/60)/60);
-        //int th = time_worked;
-        
+
+        //set the threshholds
+        // <35 hours = good,
+        // 35 - 40 hours = meh,
+        // 40+ = death
         if(th < 35){
           all_pixels(green);
         } else if (th >= 35 && th < 40){
@@ -239,22 +245,68 @@ class Interact : public Engine {
         } else {
           all_pixels(red);
         }
-        delay(3000);
-        all_pixels(off_light);
-        time_worked += 3000;
-        show = 0;
+        delay(3000); //show the lights for 3 seconds
+        all_pixels(off_light); //turn off the ring
+        
+        //if the person is working. . .
+        if(c){ time_worked += 3000; } //add the time to total
+        
+        show = 0; //reset the switch
       }
       else if(show == 2){
-        all_pixels(off_light);
-        if(c == on){
-          c = off;
-        } else {
-          c = on;
+
+        if(c == on){ //if he/she was counting
+          c = off;  //turn counting off
+          all_pixels(yellow);  //turn on all the lights
+          
+          //then one by one turn them off
+          for(int i = 11; i >= 0; i--)
+          {
+            pixel_off(i);
+            delay(150);
+          }
+        } else { //otherwise
+          c = on;  //turn counting on
+          all_pixels(off_light);  //turn all the pixels off
+          
+          //then one by one turn them on
+          for(int i = 0; i <= 11; i++)
+          {
+            pixel_on(i,yellow);
+            delay(150);
+          }
+          delay(500); //give a final show of the lights
+          all_pixels(off_light);  //turn them all off
         }
+        show = 0; //reset the switch
       }
       else if(show == 3){
         all_pixels(off_light);
         time_worked = 0; //reset the master timer
+
+        all_pixels(red);  //turn on all the lights
+        
+        //then one by one turn them off
+        for(int i = 11; i >= 0; i--)
+        {
+          pixel_off(i);
+          delay(300);
+          strip.show();
+        }
+
+        all_pixels(red);
+        delay(200);
+        all_pixels(off_light);
+        delay(200);
+        all_pixels(red);
+        delay(200);
+        all_pixels(off_light);
+        delay(200);
+        all_pixels(red);
+        delay(200);
+        all_pixels(off_light);
+        
+        show = 0; //reset the switch
       }
     }
 };
